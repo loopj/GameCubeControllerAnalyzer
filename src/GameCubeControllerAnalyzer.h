@@ -32,8 +32,8 @@ class ANALYZER_EXPORT GameCubeControllerAnalyzer : public Analyzer2
     virtual bool NeedsRerun();
 
   protected: // vars
-    std::auto_ptr<GameCubeControllerAnalyzerSettings> mSettings;
-    std::auto_ptr<GameCubeControllerAnalyzerResults> mResults;
+    std::unique_ptr<GameCubeControllerAnalyzerSettings> mSettings;
+    std::unique_ptr<GameCubeControllerAnalyzerResults> mResults;
     AnalyzerChannelData* mGamecube;
 
     GameCubeControllerSimulationDataGenerator mSimulationDataGenerator;

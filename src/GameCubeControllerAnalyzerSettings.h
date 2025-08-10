@@ -19,7 +19,7 @@ class GameCubeControllerAnalyzerSettings : public AnalyzerSettings
     U32 mBitRate;
 
   protected:
-    std::auto_ptr<AnalyzerSettingInterfaceChannel> mInputChannelInterface;
+    std::unique_ptr<AnalyzerSettingInterfaceChannel> mInputChannelInterface;
 };
 
 #endif // GAMECUBECONTROLLER_ANALYZER_SETTINGS
