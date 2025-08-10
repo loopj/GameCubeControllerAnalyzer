@@ -44,6 +44,14 @@ void GameCubeControllerAnalyzerResults::GenerateBubbleText( U64 frame_index, Cha
         AddResultString( "Status Long" );
         break;
 
+    case GameCubeControllerAnalyzer::JoyBusCommand::CMD_PROBE_DEVICE:
+        AddResultString( "Probe Device" );
+        break;
+
+    case GameCubeControllerAnalyzer::JoyBusCommand::CMD_FIX_DEVICE:
+        AddResultString( "Fix Device" );
+        break;
+
     default:
         break;
     }

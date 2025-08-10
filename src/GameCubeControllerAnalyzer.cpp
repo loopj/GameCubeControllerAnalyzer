@@ -631,6 +631,86 @@ void GameCubeControllerAnalyzer::DecodeFrames()
     }
     break;
 
+    case JoyBusCommand::CMD_PROBE_DEVICE:
+    {
+        // command arg1
+        if( !( AdvanceToNextBitInPacket() && DecodeByte( data ) ) )
+        {
+            AdvanceToEndOfPacket();
+            return;
+        }
+        // command arg2
+        if( !( AdvanceToNextBitInPacket() && DecodeByte( data ) ) )
+        {
+            AdvanceToEndOfPacket();
+            return;
+        }
+        // command stop bit
+        if( !( AdvanceToNextBitInPacket() && DecodeStopBit() ) )
+        {
+            AdvanceToEndOfPacket();
+            return;
+        }
+        mDecodedTransmission = ok;
+        // response: 8 bytes
+        for(int i=0; i<8; ++i)
+        {
+            if( ok )
+                ok = AdvanceToNextBitInPacket() && DecodeByte( data );
+        }
+        if( ok )
+            ok = AdvanceToNextBitInPacket() && DecodeStopBit();
+        mDecodedReception = ok;
+        AdvanceToEndOfPacket();
+
+        U64 end_sample = mGamecube->GetSampleNumber();
+        frame.mEndingSampleInclusive = end_sample;
+        mResults->AddFrame( frame );
+        mResults->AddFrameV2( frame_v2, "probe_device", start_sample, end_sample );
+        mResults->CommitResults();
+    }
+    break;
+
+    case JoyBusCommand::CMD_FIX_DEVICE:
+    {
+        // command arg1
+        if( !( AdvanceToNextBitInPacket() && DecodeByte( data ) ) )
+        {
+            AdvanceToEndOfPacket();
+            return;
+        }
+        // command arg2
+        if( !( AdvanceToNextBitInPacket() && DecodeByte( data ) ) )
+        {
+            AdvanceToEndOfPacket();
+            return;
+        }
+        // command stop bit
+        if( !( AdvanceToNextBitInPacket() && DecodeStopBit() ) )
+        {
+            AdvanceToEndOfPacket();
+            return;
+        }
+        mDecodedTransmission = ok;
+        // response: 3 bytes
+        for(int i=0; i<3; ++i)
+        {
+            if( ok )
+                ok = AdvanceToNextBitInPacket() && DecodeByte( data );
+        }
+        if( ok )
+            ok = AdvanceToNextBitInPacket() && DecodeStopBit();
+        mDecodedReception = ok;
+        AdvanceToEndOfPacket();
+
+        U64 end_sample = mGamecube->GetSampleNumber();
+        frame.mEndingSampleInclusive = end_sample;
+        mResults->AddFrame( frame );
+        mResults->AddFrameV2( frame_v2, "fix_device", start_sample, end_sample );
+        mResults->CommitResults();
+    }
+    break;
+
     default:
         AdvanceToEndOfPacket();
         break;

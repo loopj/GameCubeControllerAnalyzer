@@ -17,6 +17,8 @@ class ANALYZER_EXPORT GameCubeControllerAnalyzer : public Analyzer2
         CMD_ORIGIN = 0x41,
         CMD_RECALIBRATE = 0x42,
         CMD_STATUS_LONG = 0x43,
+        CMD_PROBE_DEVICE = 0x4D,
+        CMD_FIX_DEVICE = 0x4E,
     };
 
     GameCubeControllerAnalyzer();
