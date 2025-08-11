@@ -128,513 +128,183 @@ bool GameCubeControllerAnalyzer::AdvanceToNextBitInPacket()
     return false;
 }
 
+// SIMPLIFIED DECODER: Just output raw bytes with hex values in bubbles
 void GameCubeControllerAnalyzer::DecodeFrames()
 {
     // traverse to the first falling edge
     mGamecube->AdvanceToNextEdge();
-    U64 start_sample = mGamecube->GetSampleNumber();
 
-    U8 cmd, data;
+    // Start by decoding the command byte
+    U8 command_byte;
+    U64 byte_start_sample = mGamecube->GetSampleNumber();
 
-    // try to decode the command
-    if( !DecodeByte( cmd ) )
+    if( !DecodeByte( command_byte ) )
     {
         AdvanceToEndOfPacket();
         return;
     }
 
-    bool ok = true;
-    FrameV2 frame_v2;
-    // TODO: delete when FrameV2 supports bubble generation
+    // Create frame for command byte
+    U64 byte_end_sample = mGamecube->GetSampleOfNextEdge(); // Use next falling edge for end
     Frame frame;
-    frame.mStartingSampleInclusive = start_sample;
-    frame.mType = cmd;
-
-    // TODO: support more commands, there is a list here: https://n64brew.dev/wiki/Joybus_Protocol
-    switch( cmd )
+    frame.mStartingSampleInclusive = byte_start_sample;
+    frame.mEndingSampleInclusive = byte_end_sample - 1; // End just before next byte or stop bit starts
+    frame.mType = 1;                                    // Command byte
+    frame.mData1 = command_byte;
+    mResults->AddFrame( frame );
+// AddFrameV2 for Data Table support
+#ifdef LOGIC2
+    FrameV2 framev2;
+    switch( command_byte )
     {
-    case JoyBusCommand::CMD_ID:
-    {
-        // command stop bit
-        if( !( AdvanceToNextBitInPacket() && DecodeStopBit() ) )
-        {
-            AdvanceToEndOfPacket();
-            return;
-        }
-        mDecodedTransmission = ok;
-
-        // response
-        uint8_t device[ 2 ];
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            device[ 1 ] = data;
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            device[ 0 ] = data;
-            frame_v2.AddByteArray( "Device", device, sizeof( device ) );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "Status", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeStopBit();
-        mDecodedReception = ok;
-        AdvanceToEndOfPacket();
-
-        U64 end_sample = mGamecube->GetSampleNumber();
-        frame.mEndingSampleInclusive = end_sample;
-        mResults->AddFrame( frame );
-        mResults->AddFrameV2( frame_v2, "id", start_sample, end_sample );
-        mResults->CommitResults();
-    }
-    break;
-
-    case JoyBusCommand::CMD_STATUS:
-    {
-        // command arg1
-        if( !( AdvanceToNextBitInPacket() && DecodeByte( data ) ) )
-        {
-            AdvanceToEndOfPacket();
-            return;
-        }
-        frame_v2.AddByte( "Poll Mode", data );
-        U8 poll_mode = data;
-
-        // command arg2
-        if( !( AdvanceToNextBitInPacket() && DecodeByte( data ) ) )
-        {
-            AdvanceToEndOfPacket();
-            return;
-        }
-        frame_v2.AddByte( "Motor Mode", data );
-
-        // command stop bit
-        if( !( AdvanceToNextBitInPacket() && DecodeStopBit() ) )
-        {
-            AdvanceToEndOfPacket();
-            return;
-        }
-        mDecodedTransmission = ok;
-
-        // response
-        uint8_t buttons[ 2 ];
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            buttons[ 1 ] = data;
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            buttons[ 0 ] = data;
-            frame_v2.AddByteArray( "Buttons", buttons, sizeof( buttons ) );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "Joystick X", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "Joystick Y", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            if( poll_mode == 1 || poll_mode == 2 )
-            {
-                frame_v2.AddByte( "C-Stick X", data & 0xF0 );
-                frame_v2.AddByte( "C-Stick Y", data & 0x0F );
-            }
-            else
-            {
-                frame_v2.AddByte( "C-Stick X", data );
-            }
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            if( poll_mode == 1 )
-            {
-                frame_v2.AddByte( "L Analog", data );
-            }
-            else if( poll_mode == 2 )
-            {
-                frame_v2.AddByte( "L Analog", data & 0xF0 );
-                frame_v2.AddByte( "R Analog", data & 0x0F );
-            }
-            else
-            {
-                frame_v2.AddByte( "C-Stick Y", data );
-            }
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            if( poll_mode == 0 )
-            {
-                frame_v2.AddByte( "L Analog", data & 0xF0 );
-                frame_v2.AddByte( "R Analog", data & 0x0F );
-            }
-            else if( poll_mode == 1 )
-            {
-                frame_v2.AddByte( "R Analog", data );
-            }
-            else if( poll_mode == 2 || poll_mode == 4 )
-            {
-                frame_v2.AddByte( "A Analog", data );
-            }
-            else
-            {
-                frame_v2.AddByte( "L Analog", data );
-            }
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            if( poll_mode == 0 || poll_mode == 1 )
-            {
-                frame_v2.AddByte( "A Analog", data & 0xF0 );
-                frame_v2.AddByte( "B Analog", data & 0x0F );
-            }
-            else if( poll_mode == 2 || poll_mode == 4 )
-            {
-                frame_v2.AddByte( "B Analog", data );
-            }
-            else
-            {
-                frame_v2.AddByte( "R Analog", data );
-            }
-        }
-
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeStopBit();
-        mDecodedReception = ok;
-        AdvanceToEndOfPacket();
-
-        U64 end_sample = mGamecube->GetSampleNumber();
-        frame.mEndingSampleInclusive = end_sample;
-        mResults->AddFrame( frame );
-        mResults->AddFrameV2( frame_v2, "status", start_sample, end_sample );
-        mResults->CommitResults();
-    }
-    break;
-
-    case JoyBusCommand::CMD_ORIGIN:
-    {
-        // command stop bit
-        if( !( AdvanceToNextBitInPacket() && DecodeStopBit() ) )
-        {
-            AdvanceToEndOfPacket();
-            return;
-        }
-        mDecodedTransmission = ok;
-
-        // response
-        uint8_t buttons[ 2 ];
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            buttons[ 1 ] = data;
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            buttons[ 0 ] = data;
-            frame_v2.AddByteArray( "Buttons", buttons, sizeof( buttons ) );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "Joystick X", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "Joystick Y", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "C-Stick X", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "C-Stick Y", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "L Analog", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "R Analog", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "A Analog", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "B Analog", data );
-        }
-
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeStopBit();
-        mDecodedReception = ok;
-        AdvanceToEndOfPacket();
-
-        U64 end_sample = mGamecube->GetSampleNumber();
-        frame.mEndingSampleInclusive = end_sample;
-        mResults->AddFrame( frame );
-        mResults->AddFrameV2( frame_v2, "origin", start_sample, end_sample );
-        mResults->CommitResults();
-    }
-    break;
-
-
-    case JoyBusCommand::CMD_RECALIBRATE:
-    {
-        // command arg1
-        if( !( AdvanceToNextBitInPacket() && DecodeByte( data ) ) )
-        {
-            AdvanceToEndOfPacket();
-            return;
-        }
-        frame_v2.AddByte( "Poll Mode", data );
-
-        // command arg2
-        if( !( AdvanceToNextBitInPacket() && DecodeByte( data ) ) )
-        {
-            AdvanceToEndOfPacket();
-            return;
-        }
-        frame_v2.AddByte( "Motor Mode", data );
-
-        // command stop bit
-        if( !( AdvanceToNextBitInPacket() && DecodeStopBit() ) )
-        {
-            AdvanceToEndOfPacket();
-            return;
-        }
-        mDecodedTransmission = ok;
-
-        // response
-        uint8_t buttons[ 2 ];
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            buttons[ 1 ] = data;
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            buttons[ 0 ] = data;
-            frame_v2.AddByteArray( "Buttons", buttons, sizeof( buttons ) );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "Joystick X", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "Joystick Y", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "C-Stick X", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "C-Stick Y", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "L Analog", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "R Analog", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "A Analog", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "B Analog", data );
-        }
-
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeStopBit();
-        mDecodedReception = ok;
-        AdvanceToEndOfPacket();
-
-        U64 end_sample = mGamecube->GetSampleNumber();
-        frame.mEndingSampleInclusive = end_sample;
-        mResults->AddFrame( frame );
-        mResults->AddFrameV2( frame_v2, "recalibrate", start_sample, end_sample );
-        mResults->CommitResults();
-    }
-    break;
-
-    case JoyBusCommand::CMD_STATUS_LONG:
-    {
-        // command arg1
-        if( !( AdvanceToNextBitInPacket() && DecodeByte( data ) ) )
-        {
-            AdvanceToEndOfPacket();
-            return;
-        }
-        frame_v2.AddByte( "Poll Mode", data );
-
-        // command arg2
-        if( !( AdvanceToNextBitInPacket() && DecodeByte( data ) ) )
-        {
-            AdvanceToEndOfPacket();
-            return;
-        }
-        frame_v2.AddByte( "Motor Mode", data );
-
-        // command stop bit
-        if( !( AdvanceToNextBitInPacket() && DecodeStopBit() ) )
-        {
-            AdvanceToEndOfPacket();
-            return;
-        }
-        mDecodedTransmission = ok;
-
-        // response
-        uint8_t buttons[ 2 ];
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            buttons[ 1 ] = data;
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            buttons[ 0 ] = data;
-            frame_v2.AddByteArray( "Buttons", buttons, sizeof( buttons ) );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "Joystick X", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "Joystick Y", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "C-Stick X", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "C-Stick Y", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "L Analog", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "R Anlog", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "A Analog", data );
-        }
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeByte( data );
-        if( ok )
-        {
-            frame_v2.AddByte( "B Analog", data );
-        }
-
-        if( ok )
-            ok = AdvanceToNextBitInPacket() && DecodeStopBit();
-        mDecodedReception = ok;
-        AdvanceToEndOfPacket();
-
-        U64 end_sample = mGamecube->GetSampleNumber();
-        frame.mEndingSampleInclusive = end_sample;
-        mResults->AddFrame( frame );
-        mResults->AddFrameV2( frame_v2, "status (long)", start_sample, end_sample );
-        mResults->CommitResults();
-    }
-    break;
-
+    case CMD_ID:
+        framev2.AddString( "Command", "ID" );
+        break;
+    case CMD_STATUS:
+        framev2.AddString( "Command", "Status" );
+        break;
+    case CMD_ORIGIN:
+        framev2.AddString( "Command", "Origin" );
+        break;
+    case CMD_RECALIBRATE:
+        framev2.AddString( "Command", "Recalibrate" );
+        break;
+    case CMD_STATUS_LONG:
+        framev2.AddString( "Command", "Status Long" );
+        break;
+    case CMD_PROBE_DEVICE:
+        framev2.AddString( "Command", "Probe Device" );
+        break;
+    case CMD_FIX_DEVICE:
+        framev2.AddString( "Command", "Fix Device" );
+        break;
     default:
-        AdvanceToEndOfPacket();
+        framev2.AddString( "Command", "Unknown" );
         break;
     }
+    framev2.AddByte( "Value", command_byte );
+    mResults->AddFrameV2( framev2, "Command", byte_start_sample, byte_end_sample - 1 );
+#endif
+    mResults->CommitResults();
+
+    // Determine command structure based on command byte
+    int command_length = 1;  // Default: just the command byte
+    int response_length = 0; // Default: no response
+
+    switch( command_byte )
+    {
+    case CMD_ID:             // 0x00
+        command_length = 1;  // Just command byte
+        response_length = 3; // 2 bytes device ID + 1 byte status
+        break;
+
+    case CMD_STATUS:         // 0x40
+        command_length = 3;  // Command + 2 argument bytes
+        response_length = 8; // Controller state data
+        break;
+
+    case CMD_ORIGIN:          // 0x41
+        command_length = 1;   // Just command byte
+        response_length = 10; // Origin calibration data
+        break;
+
+    case CMD_RECALIBRATE:     // 0x42
+        command_length = 3;   // Command + 2 argument bytes
+        response_length = 10; // Recalibration response data
+        break;
+
+    case CMD_STATUS_LONG:     // 0x43
+        command_length = 3;   // Command + 2 argument bytes
+        response_length = 10; // Long status response data
+        break;
+
+    case CMD_PROBE_DEVICE:   // 0x4D
+        command_length = 3;  // Command + 2 argument bytes
+        response_length = 8; // Probe response data
+        break;
+
+    case CMD_FIX_DEVICE:     // 0x4E
+        command_length = 3;  // Command + 2 argument bytes
+        response_length = 3; // Fix device response
+        break;
+
+    default:
+        // Unknown command, just decode what we can
+        command_length = 1;
+        response_length = 0;
+        break;
+    }
+
+    // Decode remaining command bytes (if any)
+    for( int i = 1; i < command_length; i++ )
+    {
+        if( !AdvanceToNextBitInPacket() )
+            break;
+
+        byte_start_sample = mGamecube->GetSampleNumber();
+        U8 byte;
+
+        if( !DecodeByte( byte ) )
+            break;
+
+        byte_end_sample = mGamecube->GetSampleOfNextEdge(); // Use next falling edge for end
+        Frame frame;
+        frame.mStartingSampleInclusive = byte_start_sample;
+        frame.mEndingSampleInclusive = byte_end_sample - 1;
+        frame.mType = 0; // Data byte
+        frame.mData1 = byte;
+        mResults->AddFrame( frame );
+        mResults->CommitResults();
+    }
+
+    // Look for stop bit if we expect a response
+    if( response_length > 0 )
+    {
+        if( AdvanceToNextBitInPacket() && DecodeStopBit() )
+        {
+            mDecodedTransmission = true;
+
+            // Decode response bytes
+            for( int i = 0; i < response_length; i++ )
+            {
+                if( !AdvanceToNextBitInPacket() )
+                    break;
+
+                byte_start_sample = mGamecube->GetSampleNumber();
+                U8 byte;
+
+                if( !DecodeByte( byte ) )
+                    break;
+
+                byte_end_sample = mGamecube->GetSampleOfNextEdge(); // Use next falling edge for end
+                Frame frame;
+                frame.mStartingSampleInclusive = byte_start_sample;
+                frame.mEndingSampleInclusive = byte_end_sample - 1;
+                frame.mType = 0; // Data byte
+                frame.mData1 = byte;
+                mResults->AddFrame( frame );
+                mResults->CommitResults();
+            }
+
+            // Look for final stop bit
+            if( AdvanceToNextBitInPacket() )
+            {
+                DecodeStopBit();
+                mDecodedReception = true;
+            }
+        }
+    }
+    else
+    {
+        // No response expected, just look for stop bit to end command
+        if( AdvanceToNextBitInPacket() )
+        {
+            DecodeStopBit();
+            mDecodedTransmission = true;
+        }
+    }
+
+    AdvanceToEndOfPacket();
 }
 
 // attempts to decode a byte. the current sample should be a falling edge and this
@@ -697,7 +367,14 @@ bool GameCubeControllerAnalyzer::DecodeDataBit( bool& bit )
 
         // add an indicator showing the bit value
         U64 middle_sample = ( starting_sample + ending_sample ) / 2;
-        mResults->AddMarker( middle_sample, AnalyzerResults::Dot, mSettings->mInputChannel );
+        if( bit )
+        {
+            mResults->AddMarker( middle_sample, AnalyzerResults::One, mSettings->mInputChannel );
+        }
+        else
+        {
+            mResults->AddMarker( middle_sample, AnalyzerResults::Zero, mSettings->mInputChannel );
+        }
     }
 
     return true;
@@ -716,5 +393,14 @@ bool GameCubeControllerAnalyzer::DecodeStopBit()
 
     // after observing an OEM controller, the low-time of a stop bit tended to be more than an
     // average "1" but less than a "0". therefore, we add a bit of leniency.
-    return low_time < 2500;
+    bool is_stop_bit = low_time < 2500;
+
+    if( is_stop_bit )
+    {
+        // Add a stop bit marker at the middle of the bit period
+        U64 middle_sample = ( falling_edge_sample + rising_edge_sample ) / 2;
+        mResults->AddMarker( middle_sample, AnalyzerResults::Stop, mSettings->mInputChannel );
+    }
+
+    return is_stop_bit;
 }
