@@ -12,13 +12,17 @@ class ANALYZER_EXPORT GameCubeControllerAnalyzer : public Analyzer2
   public:
     enum JoyBusCommand
     {
-        CMD_ID = 0x00,
-        CMD_STATUS = 0x40,
-        CMD_ORIGIN = 0x41,
-        CMD_RECALIBRATE = 0x42,
-        CMD_STATUS_LONG = 0x43,
-        CMD_PROBE_DEVICE = 0x4D,
-        CMD_FIX_DEVICE = 0x4E,
+        CMD_RESET = 0xFF,
+        CMD_TYPE_AND_STATUS = 0x00,
+        CMD_N64_POLL = 0x01,
+        CMD_N64_READ_MEM = 0x02,
+        CMD_N64_WRITE_MEM = 0x03,
+        CMD_GC_POLL = 0x40,
+        CMD_GC_READ_ORIGIN = 0x41,
+        CMD_GC_CALIBRATE = 0x42,
+        CMD_GC_LONG_POLL = 0x43,
+        CMD_GC_PROBE_DEVICE = 0x4D,
+        CMD_GC_FIX_DEVICE = 0x4E,
     };
 
     GameCubeControllerAnalyzer();

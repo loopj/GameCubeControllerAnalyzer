@@ -157,26 +157,38 @@ void GameCubeControllerAnalyzer::DecodeFrames()
     FrameV2 framev2;
     switch( command_byte )
     {
-    case CMD_ID:
-        framev2.AddString( "Command", "ID" );
+    case CMD_RESET:
+        framev2.AddString( "Command", "Reset" );
         break;
-    case CMD_STATUS:
-        framev2.AddString( "Command", "Status" );
+    case CMD_TYPE_AND_STATUS:
+        framev2.AddString( "Command", "Type and Status" );
         break;
-    case CMD_ORIGIN:
-        framev2.AddString( "Command", "Origin" );
+    case CMD_N64_POLL:
+        framev2.AddString( "Command", "N64 Poll" );
         break;
-    case CMD_RECALIBRATE:
-        framev2.AddString( "Command", "Recalibrate" );
+    case CMD_N64_READ_MEM:
+        framev2.AddString( "Command", "N64 Read Mem" );
         break;
-    case CMD_STATUS_LONG:
-        framev2.AddString( "Command", "Status Long" );
+    case CMD_N64_WRITE_MEM:
+        framev2.AddString( "Command", "N64 Write Mem" );
         break;
-    case CMD_PROBE_DEVICE:
-        framev2.AddString( "Command", "Probe Device" );
+    case CMD_GC_POLL:
+        framev2.AddString( "Command", "GC Poll" );
         break;
-    case CMD_FIX_DEVICE:
-        framev2.AddString( "Command", "Fix Device" );
+    case CMD_GC_READ_ORIGIN:
+        framev2.AddString( "Command", "GC Read Origin" );
+        break;
+    case CMD_GC_CALIBRATE:
+        framev2.AddString( "Command", "GC Calibrate" );
+        break;
+    case CMD_GC_LONG_POLL:
+        framev2.AddString( "Command", "GC Long Poll" );
+        break;
+    case CMD_GC_PROBE_DEVICE:
+        framev2.AddString( "Command", "GC Probe Device" );
+        break;
+    case CMD_GC_FIX_DEVICE:
+        framev2.AddString( "Command", "GC Fix Device" );
         break;
     default:
         framev2.AddString( "Command", "Unknown" );
@@ -193,37 +205,57 @@ void GameCubeControllerAnalyzer::DecodeFrames()
 
     switch( command_byte )
     {
-    case CMD_ID:             // 0x00
-        command_length = 1;  // Just command byte
-        response_length = 3; // 2 bytes device ID + 1 byte status
+    case CMD_RESET:           // 0xFF
+        command_length = 1;   // Just command byte
+        response_length = 3;  // 2 bytes device ID + 1 byte status
         break;
 
-    case CMD_STATUS:         // 0x40
+    case CMD_TYPE_AND_STATUS: // 0x00
+        command_length = 1;   // Just command byte
+        response_length = 3;  // 2 bytes device ID + 1 byte status
+        break;
+
+    case CMD_N64_POLL:       // 0x01
+        command_length = 1;  // Just command byte
+        response_length = 4; // Controller state data
+        break;
+
+    case CMD_N64_READ_MEM:    // 0x02
+        command_length = 3;   // Command + address high + address low
+        response_length = 33; // 32 data bytes + 1 CRC byte
+        break;
+
+    case CMD_N64_WRITE_MEM:  // 0x03
+        command_length = 35; // Command + address high + address low + 32 data bytes
+        response_length = 1; // CRC byte
+        break;
+
+    case CMD_GC_POLL:        // 0x40
         command_length = 3;  // Command + 2 argument bytes
         response_length = 8; // Controller state data
         break;
 
-    case CMD_ORIGIN:          // 0x41
+    case CMD_GC_READ_ORIGIN:  // 0x41
         command_length = 1;   // Just command byte
         response_length = 10; // Origin calibration data
         break;
 
-    case CMD_RECALIBRATE:     // 0x42
+    case CMD_GC_CALIBRATE:    // 0x42
         command_length = 3;   // Command + 2 argument bytes
         response_length = 10; // Recalibration response data
         break;
 
-    case CMD_STATUS_LONG:     // 0x43
+    case CMD_GC_LONG_POLL:    // 0x43
         command_length = 3;   // Command + 2 argument bytes
         response_length = 10; // Long status response data
         break;
 
-    case CMD_PROBE_DEVICE:   // 0x4D
-        command_length = 3;  // Command + 2 argument bytes
-        response_length = 8; // Probe response data
+    case CMD_GC_PROBE_DEVICE: // 0x4D
+        command_length = 3;   // Command + 2 argument bytes
+        response_length = 8;  // Probe response data
         break;
 
-    case CMD_FIX_DEVICE:     // 0x4E
+    case CMD_GC_FIX_DEVICE:  // 0x4E
         command_length = 3;  // Command + 2 argument bytes
         response_length = 3; // Fix device response
         break;

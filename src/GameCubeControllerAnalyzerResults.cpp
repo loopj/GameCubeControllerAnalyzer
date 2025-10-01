@@ -29,26 +29,38 @@ void GameCubeControllerAnalyzerResults::GenerateBubbleText( U64 frame_index, Cha
         const char* command_name = nullptr;
         switch( frame.mData1 )
         {
-        case GameCubeControllerAnalyzer::CMD_ID:
-            command_name = "ID";
+        case GameCubeControllerAnalyzer::CMD_RESET:
+            command_name = "Reset";
             break;
-        case GameCubeControllerAnalyzer::CMD_STATUS:
-            command_name = "Status";
+        case GameCubeControllerAnalyzer::CMD_TYPE_AND_STATUS:
+            command_name = "Type and Status";
             break;
-        case GameCubeControllerAnalyzer::CMD_ORIGIN:
-            command_name = "Origin";
+        case GameCubeControllerAnalyzer::CMD_N64_POLL:
+            command_name = "N64 Poll";
             break;
-        case GameCubeControllerAnalyzer::CMD_RECALIBRATE:
-            command_name = "Recalibrate";
+        case GameCubeControllerAnalyzer::CMD_N64_READ_MEM:
+            command_name = "N64 Read Mem";
             break;
-        case GameCubeControllerAnalyzer::CMD_STATUS_LONG:
-            command_name = "Status Long";
+        case GameCubeControllerAnalyzer::CMD_N64_WRITE_MEM:
+            command_name = "N64 Write Mem";
             break;
-        case GameCubeControllerAnalyzer::CMD_PROBE_DEVICE:
-            command_name = "Probe Device";
+        case GameCubeControllerAnalyzer::CMD_GC_POLL:
+            command_name = "GC Poll";
             break;
-        case GameCubeControllerAnalyzer::CMD_FIX_DEVICE:
-            command_name = "Fix Device";
+        case GameCubeControllerAnalyzer::CMD_GC_READ_ORIGIN:
+            command_name = "GC Read Origin";
+            break;
+        case GameCubeControllerAnalyzer::CMD_GC_CALIBRATE:
+            command_name = "GC Calibrate";
+            break;
+        case GameCubeControllerAnalyzer::CMD_GC_LONG_POLL:
+            command_name = "GC Long Poll";
+            break;
+        case GameCubeControllerAnalyzer::CMD_GC_PROBE_DEVICE:
+            command_name = "GC Probe Device";
+            break;
+        case GameCubeControllerAnalyzer::CMD_GC_FIX_DEVICE:
+            command_name = "GC Fix Device";
             break;
         default:
             command_name = "Unknown";
@@ -112,26 +124,38 @@ void GameCubeControllerAnalyzerResults::GenerateFrameTabularText( U64 frame_inde
         const char* command_name = nullptr;
         switch( frame.mData1 )
         {
-        case GameCubeControllerAnalyzer::CMD_ID:
-            command_name = "ID";
+        case GameCubeControllerAnalyzer::CMD_RESET:
+            command_name = "Reset";
             break;
-        case GameCubeControllerAnalyzer::CMD_STATUS:
-            command_name = "Status";
+        case GameCubeControllerAnalyzer::CMD_TYPE_AND_STATUS:
+            command_name = "Type and Status";
             break;
-        case GameCubeControllerAnalyzer::CMD_ORIGIN:
-            command_name = "Origin";
+        case GameCubeControllerAnalyzer::CMD_N64_POLL:
+            command_name = "N64 Poll";
             break;
-        case GameCubeControllerAnalyzer::CMD_RECALIBRATE:
-            command_name = "Recalibrate";
+        case GameCubeControllerAnalyzer::CMD_N64_READ_MEM:
+            command_name = "N64 Read Mem";
             break;
-        case GameCubeControllerAnalyzer::CMD_STATUS_LONG:
-            command_name = "Status Long";
+        case GameCubeControllerAnalyzer::CMD_N64_WRITE_MEM:
+            command_name = "N64 Write Mem";
             break;
-        case GameCubeControllerAnalyzer::CMD_PROBE_DEVICE:
-            command_name = "Probe Device";
+        case GameCubeControllerAnalyzer::CMD_GC_POLL:
+            command_name = "GC Poll";
             break;
-        case GameCubeControllerAnalyzer::CMD_FIX_DEVICE:
-            command_name = "Fix Device";
+        case GameCubeControllerAnalyzer::CMD_GC_READ_ORIGIN:
+            command_name = "GC Read Origin";
+            break;
+        case GameCubeControllerAnalyzer::CMD_GC_CALIBRATE:
+            command_name = "GC Calibrate";
+            break;
+        case GameCubeControllerAnalyzer::CMD_GC_LONG_POLL:
+            command_name = "GC Long Poll";
+            break;
+        case GameCubeControllerAnalyzer::CMD_GC_PROBE_DEVICE:
+            command_name = "GC Probe Device";
+            break;
+        case GameCubeControllerAnalyzer::CMD_GC_FIX_DEVICE:
+            command_name = "GC Fix Device";
             break;
         default:
             command_name = "Unknown";
