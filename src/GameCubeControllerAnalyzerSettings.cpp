@@ -27,7 +27,7 @@ bool GameCubeControllerAnalyzerSettings::SetSettingsFromInterfaces()
     mInputChannel = mInputChannelInterface->GetChannel();
 
     ClearChannels();
-    AddChannel( mInputChannel, "GameCube", true );
+    AddChannel( mInputChannel, "Joybus", true );
 
     return true;
 }
@@ -45,7 +45,7 @@ void GameCubeControllerAnalyzerSettings::LoadSettings( const char* settings )
     text_archive >> mInputChannel;
 
     ClearChannels();
-    AddChannel( mInputChannel, "GameCube", true );
+    AddChannel( mInputChannel, "Joybus", true );
 
     UpdateInterfacesFromSettings();
 }
